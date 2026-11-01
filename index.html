@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MOM AI">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22MOM%20AI%22%2C%22short_name%22%3A%22MOM%20AI%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f766e%22%2C%22theme_color%22%3A%22%230f766e%22%7D">
+<title>MOM AI — Meeting Minutes</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root{
+    --teal:#0f766e; --teal-dk:#115e59; --bg:#f4f7f6; --card:#ffffff;
+    --ink:#12211f; --mut:#5f7a77; --line:#e2ebe9; --warn:#b45309;
+  }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    background:linear-gradient(135deg,var(--teal),var(--teal-dk)); color:#fff;
+    padding:calc(env(safe-area-inset-top) + 18px) 18px 18px; position:sticky; top:0; z-index:10;
+  }
+  header h1{ margin:0; font-size:19px; letter-spacing:.2px; }
+  header p{ margin:4px 0 0; font-size:12.5px; opacity:.85; }
+  .wrap{ padding:16px; max-width:640px; margin:0 auto; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(18,33,31,.05);
+  }
+  label{ display:block; font-size:12.5px; font-weight:600; color:var(--mut); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+  select,input,textarea{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
+    font-size:15px; font-family:inherit; background:#fbfdfc; color:var(--ink);
+  }
+  select:focus,input:focus,textarea:focus{ outline:2px solid var(--teal); outline-offset:-1px; }
+  textarea{ resize:vertical; min-height:98px; line-height:1.5; }
+  .row{ display:flex; gap:10px; margin-top:12px; }
+  .row > *{ flex:1; }
+  button{
+    border:0; border-radius:11px; padding:14px; font-size:15px; font-weight:600;
+    font-family:inherit; cursor:pointer; transition:transform .08s, opacity .15s;
+  }
+  button:active{ transform:scale(.98); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-main{ background:var(--teal); color:#fff; width:100%; }
+  .btn-sec{ background:#eef4f3; color:var(--teal-dk); }
+  .btn-wa{ background:#25D366; color:#fff; }
+  .btn-ghost{ background:transparent; color:var(--mut); border:1px solid var(--line); }
+  .rec{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:17px; padding:22px; }
+  .dot{ width:11px; height:11px; border-radius:50%; background:#fff; }
+  .recording .dot{ animation:pulse 1.1s infinite; }
+  .recording{ background:#dc2626 !important; }
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.25} }
+  .timer{ font-variant-numeric:tabular-nums; font-size:30px; font-weight:700; text-align:center; color:var(--teal-dk); margin:6px 0 2px; }
+  .hint{ font-size:12.5px; color:var(--mut); line-height:1.55; margin:10px 0 0; }
+  .hint.warn{ color:var(--warn); }
+  .out{ white-space:pre-wrap; font-size:14.5px; line-height:1.65; }
+  .out h2{
+    font-size:13px; text-transform:uppercase; letter-spacing:.6px; color:var(--teal);
+    margin:18px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--line);
+  }
+  .out h2:first-child{ margin-top:0; }
+  .out li{ margin:5px 0; }
+  .out ul{ margin:0; padding-left:20px; }
+  .badge{ display:inline-block; background:#eef4f3; color:var(--teal-dk); font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; margin-bottom:10px; }
+  .hidden{ display:none !important; }
+  .spin{
+    width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+    border-radius:50%; display:inline-block; animation:sp .7s linear infinite; vertical-align:-3px; margin-right:8px;
+  }
+  @keyframes sp{ to{ transform:rotate(360deg) } }
+  .steps{ font-size:12.5px; color:var(--mut); text-align:center; margin-top:10px; }
+  .status{ font-size:12.5px; text-align:center; margin-top:8px; min-height:16px; }
+  .status.err{ color:#dc2626; font-weight:600; }
+  .status.ok{ color:var(--teal); font-weight:600; }
+  .install-bar{
+    display:none; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+    padding:12px 14px; border-radius:12px; font-size:13px; margin-bottom:14px; line-height:1.5;
+  }
+  .install-bar button{ background:#9a3412; color:#fff; padding:8px 12px; font-size:13px; margin-top:8px; width:100%; }
+  .keynote{ font-size:11.5px; color:var(--mut); margin:8px 0 0; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 MOM AI</h1>
+  <p>Meeting Minutes from voice · اردو · English · پښتو</p>
+</header>
+
+<div class="wrap">
+
+  <div class="install-bar" id="installBar">
+    <strong>Install this app on your phone</strong><br>
+    Tap below (Android), or on iPhone tap <em>Share → Add to Home Screen</em>.
+    <button id="installBtn">Install app</button>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="card">
+    <label for="apiKey">AI API key (Gemini)</label>
+    <input type="password" id="apiKey" placeholder="Paste your Google AI Studio key" autocomplete="off">
+    <p class="keynote">Get a free key at <strong>aistudio.google.com/apikey</strong>. Stored only on this device.</p>
+
+    <div style="margin-top:14px">
+      <label for="lang">Meeting language</label>
+      <select id="lang">
+        <option value="auto">Auto-detect (mix)</option>
+        <option value="Urdu" selected>Urdu</option>
+        <option value="English">English</option>
+        <option value="Pashto">Pashto</option>
+      </select>
+    </div>
+
+    <div style="margin-top:14px">
+      <label for="title">Meeting title (optional)</label>
+      <input type="text" id="title" placeholder="e.g. Weekly Team Sync">
+    </div>
+  </div>
+
+  <!-- RECORDER -->
+  <div class="card">
+    <div class="timer" id="timer">00:00</div>
+    <div class="steps" id="steps">Ready to record</div>
+
+    <button id="recBtn" class="btn-main rec" style="margin-top:12px">
+      <span class="dot"></span> Start Recording
+    </button>
+
+    <div class="row">
+      <button id="stopBtn" class="btn-sec" disabled>Stop</button>
+      <button id="clearBtn" class="btn-ghost">Reset</button>
+    </div>
+
+    <p class="hint warn" id="pashtoNote" style="display:none">
+      ⚠️ Pashto transcription is still weak in current AI models. Please review and correct
+      the transcript below before generating the report.
+    </p>
+
+    <p class="hint">
+      Tip: place the phone in the middle of the table. Keep it recording for the whole meeting —
+      you can record up to ~30 minutes, then generate the report.
+    </p>
+  </div>
+
+  <!-- TRANSCRIPT -->
+  <div class="card hidden" id="transcriptCard">
+    <label>Transcript (you can edit before summarizing)</label>
+    <textarea id="transcript" placeholder="Transcript will appear here…"></textarea>
+    <button id="genBtn" class="btn-main" style="margin-top:12px">✨ Generate MOM Report</button>
+    <p class="status" id="genStatus"></p>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="card hidden" id="outputCard">
+    <span class="badge" id="outLang">Report</span>
+    <div class="out" id="output"></div>
+
+    <div class="row">
+      <button id="waBtn" class="btn-wa">📲 Share on WhatsApp</button>
+    </div>
+    <div class="row">
+      <button id="copyBtn" class="btn-sec">Copy</button>
+      <button id="dlBtn" class="btn-ghost">Download .txt</button>
+    </div>
+    <p class="status" id="shareStatus"></p>
+  </div>
+
+</div>
+
+<script>
+/* ---------- State ---------- */
+let mediaRecorder = null, chunks = [], stream = null;
+let timerInt = null, seconds = 0, isRecording = false;
+let lastMOM = "", lastTranscript = "";
+
+const $ = id => document.getElementById(id);
+
+/* ---------- Load saved key ---------- */
+const SAVED = localStorage.getItem("mom_gemini_key");
+if (SAVED) $("apiKey").value = SAVED;
+$("apiKey").addEventListener("change", () => {
+  localStorage.setItem("mom_gemini_key", $("apiKey").value.trim());
+});
+
+$("lang").addEventListener("change", e => {
+  $("pashtoNote").style.display = e.target.value === "Pashto" ? "block" : "none";
+});
+
+/* ---------- Install prompt ---------- */
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); deferredPrompt = e; $("installBar").style.display = "block";
+});
+$("installBtn").addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt = null; $("installBar").style.display = "none";
+});
+if (window.matchMedia("(display-mode: standalone)").matches) $("installBar").style.display = "none";
+
+/* ---------- Timer ---------- */
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0"); }
+function startTimer(){
+  seconds = 0; $("timer").textContent = "00:00";
+  timerInt = setInterval(() => { seconds++; $("timer").textContent = fmt(seconds); }, 1000);
+}
+function stopTimer(){ clearInterval(timerInt); timerInt = null; }
+
+/* ---------- Recording ---------- */
+$("recBtn").addEventListener("click", startRec);
+$("stopBtn").addEventListener("click", stopRec);
+$("clearBtn").addEventListener("click", resetAll);
+
+async function startRec(){
+  const key = $("apiKey").value.trim();
+  if (!key){ setStatus("genStatus","Please enter your Gemini API key first.","err"); return; }
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+    });
+  } catch(err){
+    setStatus("genStatus","Microphone blocked. Allow mic access in your browser settings.","err");
+    return;
+  }
+
+  chunks = [];
+  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+    ? "audio/webm;codecs=opus"
+    : (MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "");
+
+  mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  mediaRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  mediaRecorder.onstop = handleRecordingStop;
+
+  mediaRecorder.start(1000);
+  isRecording = true;
+  $("recBtn").classList.add("recording");
+  $("recBtn").innerHTML = '<span class="dot"></span> Recording…';
+  $("stopBtn").disabled = false;
+  $("steps").textContent = "Recording in progress";
+  $("transcriptCard").classList.add("hidden");
+  $("outputCard").classList.add("hidden");
+  startTimer();
+}
+
+function stopRec(){
+  if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+  mediaRecorder.stop();
+  stream.getTracks().forEach(t => t.stop());
+  isRecording = false;
+  stopTimer();
+  $("recBtn").classList.remove("recording");
+  $("recBtn").innerHTML = '<span class="dot"></span> Start Recording';
+  $("stopBtn").disabled = true;
+  $("steps").textContent = "Recorded " + fmt(seconds) + " — processing…";
+}
+
+async function handleRecordingStop(){
+  const mime = mediaRecorder.mimeType || "audio/webm";
+  const blob = new Blob(chunks, { type: mime });
+  if (blob.size < 2000){ setStatus("genStatus","Recording too short. Try again.","err"); return; }
+  await transcribe(blob, mime);
+}
+
+/* ---------- Blob → base64 ---------- */
+function blobToB64(blob){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+/* ---------- Gemini API ---------- */
+const MODEL = "gemini-2.0-flash";
+const ENDPOINT = k => `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${k}`;
+
+async function callGemini(key, parts, promptText){
+  const body = { contents: [{ role:"user", parts: [...parts, { text: promptText }] }] };
+  const r = await fetch(ENDPOINT(key), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data?.error?.message || "AI request failed");
+  const txt = data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join("\n");
+  if (!txt) throw new Error("No text returned from the model.");
+  return txt;
+}
+
+/* ---------- Transcribe ---------- */
+async function transcribe(blob, mime){
+  const key = $("apiKey").value.trim();
+  const lang = $("lang").value;
+  $("transcriptCard").classList.remove("hidden");
+  $("genBtn").disabled = true;
+  setStatus("genStatus","Transcribing audio… this may take up to a minute.","ok");
+  $("steps").textContent = "Transcribing…";
+
+  try {
+    const b64 = await blobToB64(blob);
+    const prompt = lang === "auto"
+      ? "Transcribe this meeting recording exactly as spoken. The speakers may mix Urdu, English and Pashto. Preserve the original words — do not translate. Add speaker labels like Speaker 1:, Speaker 2: when you can tell voices apart. Output the transcript only."
+      : `Transcribe this meeting recording exactly as spoken in ${lang}. Preserve the original words — do not translate. Add speaker labels like Speaker 1:, Speaker 2: when you can tell voices apart. Output the transcript only.`;
+
+    const txt = await callGemini(key, [
+      { inline_data: { mime_type: mime.split(";")[0], data: b64 } }
+    ], prompt);
+
+    $("transcript").value = txt.trim();
+    lastTranscript = txt.trim();
+    setStatus("genStatus","Transcript ready. Review it, then tap Generate MOM Report.","ok");
+    $("steps").textContent = "Transcript ready";
+    $("genBtn").disabled = false;
+  } catch(err){
+    setStatus("genStatus","Transcription failed: " + err.message,"err");
+    $("steps").textContent = "Error";
+  }
+}
+
+/* ---------- Generate MOM ---------- */
+$("genBtn").addEventListener("click", generateMOM);
+
+async function generateMOM(){
+  const key = $("apiKey").value.trim();
+  const transcript = $("transcript").value.trim();
+  const mtgTitle = $("title").value.trim() || "Team Meeting";
+  if (!transcript){ setStatus("genStatus","Transcript is empty.","err"); return; }
+
+  const btn = $("genBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Generating…';
+  setStatus("genStatus","Structuring the minutes…","ok");
+
+  const prompt = `You are a professional meeting secretary. From the transcript below, produce clean Minutes of Meeting.
+
+Meeting title: ${mtgTitle}
+
+Return the report in this exact structure, using these headings. Skip any heading that has no content.
+
+MEETING DETAILS
+- Title, Date, Time, Duration if mentioned
+
+ATTENDEES
+- Names or Speaker labels mentioned
+
+AGENDA
+- Main topics discussed
+
+DISCUSSION SUMMARY
+- A short paragraph per agenda item
+
+KEY DECISIONS
+- Bullet list of decisions made
+
+ACTION ITEMS
+- Bullet list in the format: Task — Owner — Deadline (if mentioned)
+
+NEXT STEPS
+- Follow-up meeting or pending items
+
+Write in clear English. Where a point was said in Urdu or Pashto, translate that point into English but keep names and place names as spoken. Be accurate — never invent details that are not in the transcript. If something is unclear, write "Not clearly captured".
+
+TRANSCRIPT:
+"""
+${transcript}
+"""`;
+
+  try {
+    const txt = await callGemini(key, [], prompt);
+    lastMOM = txt.trim();
+    lastTranscript = transcript;
+    renderMOM(txt.trim(), mtgTitle);
+    setStatus("genStatus","","");
+  } catch(err){
+    setStatus("genStatus","Report failed: " + err.message,"err");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "✨ Generate MOM Report";
+  }
+}
+
+/* ---------- Render ---------- */
+function renderMOM(text, title){
+  const card = $("outputCard");
+  card.classList.remove("hidden");
+  $("outLang").textContent = title;
+
+  const lines = text.split("\n");
+  let html = "", inList = false;
+  const isHead = l => /^[A-Z][A-Z\s&]{3,}$/.test(l.trim()) && l.trim().length > 3;
+
+  for (let raw of lines){
+    const line = raw.trimEnd();
+    if (!line.trim()){
+      if (inList){ html += "</ul>"; inList = false; }
+      continue;
+    }
+    if (isHead(line)){
+      if (inList){ html += "</ul>"; inList = false; }
+      html += `<h2>${esc(line.trim())}</h2>`;
+    } else if (/^[-*•]\s+/.test(line.trim()) || /^\d+[.)]\s+/.test(line.trim())){
+      if (!inList){ html += "<ul>"; inList = true; }
+      html += `<li>${esc(line.trim().replace(/^[-*•]\s+/,"").replace(/^\d+[.)]\s+/,""))}</li>`;
+    } else {
+      if (inList){ html += "</ul>"; inList = false; }
+      html += `<p style="margin:8px 0">${esc(line.trim())}</p>`;
+    }
+  }
+  if (inList) html += "</ul>";
+  $("output").innerHTML = html;
+  card.scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+function esc(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function setStatus(id, msg, cls){
+  const el = $(id);
+  el.textContent = msg;
+  el.className = "status" + (cls ? " " + cls : "");
+}
+
+/* ---------- Share / Copy / Download ---------- */
+$("waBtn").addEventListener("click", async () => {
+  if (!lastMOM) return;
+  const text = lastMOM + "\n\n— Generated with MOM AI";
+  if (navigator.share){
+    try {
+      await navigator.share({ title: $("title").value.trim() || "Meeting Minutes", text });
+      setStatus("shareStatus","Shared ✔","ok");
+      return;
+    } catch(e){ /* user cancelled or share failed → fall through */ }
+  }
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+  setStatus("shareStatus","Opening WhatsApp…","ok");
+});
+
+$("copyBtn").addEventListener("click", async () => {
+  if (!lastMOM) return;
+  try {
+    await navigator.clipboard.writeText(lastMOM);
+    setStatus("shareStatus","Copied to clipboard ✔","ok");
+  } catch {
+    setStatus("shareStatus","Copy failed — select the text manually.","err");
+  }
+});
+
+$("dlBtn").addEventListener("click", () => {
+  if (!lastMOM) return;
+  const blob = new Blob([lastMOM], { type:"text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (($("title").value.trim() || "meeting") + "-minutes.txt").replace(/\s+/g,"-").toLowerCase();
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus("shareStatus","Downloaded ✔","ok");
+});
+
+/* ---------- Reset ---------- */
+function resetAll(){
+  if (isRecording) stopRec();
+  chunks = []; lastMOM = ""; lastTranscript = ""; seconds = 0;
+  $("timer").textContent = "00:00";
+  $("steps").textContent = "Ready to record";
+  $("transcript").value = "";
+  $("output").innerHTML = "";
+  $("transcriptCard").classList.add("hidden");
+  $("outputCard").classList.add("hidden");
+  setStatus("genStatus","","");
+  setStatus("shareStatus","","");
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+
+/* ---------- Stop recording if page hidden ---------- */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && isRecording) { /* keep recording — mobile may pause anyway */ }
+});
+</script>
+
+</body>
+</html>
